@@ -1,0 +1,10 @@
+{
+    "name": "Is This True?",
+    "description": "Information validity checker",
+    "version": "1.0",
+    "manifest_version": 3,
+    "action": {
+      "default_popup": "app/app.html",
+      "default_icon": "images/icon.png"
+    }
+  }
