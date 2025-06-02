@@ -1,23 +1,18 @@
+console.log("Content script running on", window.location.href);
+
 function extractPageInfo() {
-  const bodyText = document.body.innerText.slice(0, 5000);
-  const domain = location.hostname;
-
-  const author = document.querySelector('meta[name="author"]')?.content ||
-                 document.querySelector('[itemprop="author"]')?.textContent || "Unknown";
-
-  const datePublished = document.querySelector('meta[property="article:published_time"]')?.content ||
-                        document.querySelector('meta[name="pubdate"]')?.content ||
-                        document.querySelector('[itemprop="datePublished"]')?.content || "Unknown";
+  const bodyText = document.body.innerText;
+  const url = window.location.href;
 
   const pageData = {
-    domain,
-    author,
-    datePublished,
-    bodyText,
-    url: location.href,
+    url: url,
     timestamp: new Date().toISOString()
   };
 
+  chrome.storage.local.set({bodyText: bodyText}, function() {
+    console.log('bodyText saved');
+  });
+  
   // Fetch existing data, append this one, and save back
   chrome.storage.local.get({ savedPages: [] }, (result) => {
     const updatedPages = result.savedPages;

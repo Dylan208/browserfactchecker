@@ -14,32 +14,35 @@ chrome.storage.local.get("savedPages", (result) => {
     div.className = "entry";
     div.innerText = `
 #${index + 1}
-Domain: ${page.domain}
-Author: ${page.author}
-Published: ${page.datePublished}
 Saved on: ${page.timestamp}
 URL: ${page.url}
-Body Preview:
-${page.bodyText.slice(0, 200)}...
     `;
     container.appendChild(div);
   });
 });
 
-
-
-/*
-document.getElementById('checkBtn').addEventListener('click', async () => {
-    const textToAnalyze = chrome.storage.local.get('savedString');
-    
-    // Call the background script to make the API request
-    chrome.runtime.sendMessage({ text: textToAnalyze, action: "aiDetection" }, function (response) {
-      if (response && response.result) {
-        document.getElementById('aiResult').textContent = 
-          `AI Score: ${response.result.score}`;
-      } else {
-        document.getElementById('aiResult').textContent = 
-          'Error detecting AI content';
-      }
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('detectBtn').addEventListener('click', async () => {
+    console.log("clicked button");
+    chrome.storage.local.get('bodyText', (result) => {
+      const textToAnalyze = result.bodyText;
+      console.log("retrieved text to analyze: ", textToAnalyze);
+      // Call the background script to make the API request
+      chrome.runtime.sendMessage({ text: textToAnalyze }, function (response) {
+        console.log("sent to API");
+        if (response && response.result) {
+          const score = response.result.score; // Your score
+          console.log("AI Score (0-1): ", response.result.score);
+          // Calculate percentage
+          const percentage = score * 100;
+          document.getElementById('aiResult').textContent =
+            `Likelihood of AI Text: ${percentage.toFixed(2)}%`;
+        } else {
+          document.getElementById('aiResult').textContent =
+            'Error detecting AI content';
+        }
+      });
     });
-  }); */
+  });
+});
+
