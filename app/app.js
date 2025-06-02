@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const textToAnalyze = result.bodyText;
       console.log("retrieved text to analyze: ", textToAnalyze);
       // Call the background script to make the API request
-      chrome.runtime.sendMessage({ text: textToAnalyze }, function (response) {
+      chrome.runtime.sendMessage({ text: textToAnalyze, action: 'aiDetect' }, function (response) {
         console.log("sent to API");
         if (response && response.result) {
           const score = response.result.score; // Your score
