@@ -1,33 +1,31 @@
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === "aiDetect" && message.text) {
-        const apiKey = 'api-key'; // Replace with your Sapling API key
-        console.log('recieved by api');
-        try {
-                        (async () => {
-                            const response = await fetch('https://api.sapling.ai/api/v1/aidetect', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    key: apiKey,
-                                    text: message.text.toString()
-                                })
-                            });
-
-                            const result = await response.json();
-                            console.log('processed by api');
-                            sendResponse({ result: result });
-                        })();
-                } catch (error) {
-                    console.error('Error:', error);
-                    sendResponse({ error: 'Failed to detect AI content' });
-                }
+    if (message.action === "check") {
+        runContentScript()
     }
-
     return true;
+});
+
+function runContentScript() {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const currentUrl = tabs[0].url;
+        let shouldRun = 1;
+        chrome.storage.local.get("savedPages", (result) => {
+            console.log('checking for existing data')
+            const pages = result.savedPages || [];
+            pages.forEach((page) => {
+                if (currentUrl == page.url) {
+                    console.log('data already saved')
+                    shouldRun = 0;
+                }
+            });
+        });
+        if (shouldRun === 1) {
+            console.log("Running content script...");
+            chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                files: ['content.js']
+            });
+        }
+    });
 }
-
-
-);
