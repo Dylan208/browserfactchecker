@@ -30,7 +30,9 @@ function updateSavedPages() {
     div.innerText = `
 #${index + 1}
 Domain: ${page.domain}
-Author: ${page.author}
+Author: ${page.authorName}
+Followers: ${page.authorFollowers}
+Verification: ${page.authorVerified}
 Published: ${page.date}
 AI Score: ${page.aiScore}
 Saved on: ${page.timestamp}

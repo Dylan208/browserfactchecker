@@ -1,15 +1,27 @@
 console.log("Content script running on", window.location.href);
 
 async function extractPageInfo() {
-  const aiScore = await checkAI();
+  const text = document.body.innerText;
+  const aiScore = await new Promise((resolve) => {
+    chrome.runtime.sendMessage({ action: 'detectAI', text: text }, (response) => {
+      resolve(response.aiScore);
+    })
+  });
   const url = window.location.href;
   const author = findAuthor();
+  const authorBSKY = await new Promise((resolve) => {
+    chrome.runtime.sendMessage({ action: 'lookupBSKY', handle: author }, (response) => {
+      resolve(response.profile);
+    })
+  })
   const date = findPublicationDate();
   const domain = findTLD();
 
   const pageData = {
     url: url,
-    author: author,
+    authorName: author,
+    authorFollowers: authorBSKY.followers,
+    authorVerified: authorBSKY.verified,
     date: date,
     domain: domain,
     aiScore: aiScore,
@@ -177,30 +189,6 @@ function findPublicationDate() {
   }
 
   return new Date().toISOString().split('T')[0];
-}
-
-async function checkAI() {
-  const apiKey = 'api-key'; // Replace with your Sapling API key
-  const text = document.body.innerText;
-  console.log('recieved by api');
-  try {
-    const response = await fetch('https://api.sapling.ai/api/v1/aidetect', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        key: apiKey,
-        text: text.toString()
-      })
-    });
-
-    const result = await response.json();
-    console.log('processed by api');
-    return result.score;
-  } catch (error) {
-    console.error('Error:', error);
-  }
 }
 
 extractPageInfo()
