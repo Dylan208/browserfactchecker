@@ -1,15 +1,19 @@
+//Communication between app.js and content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     switch (message.action) {
+        //Recieves message from app.js that button has been clicked
         case "check":
             runContentScript()
             return true;
 
+        //Recieves request from content script for an api call to sapling api
         case "detectAI":
             checkAI(message.text)
                 .then(aiScore => sendResponse({ success: true, aiScore }))
                 .catch(error => sendResponse({ success: false, error: error.message }));
             return true;
 
+        //Recieves request from content script for an api call to bluesky public api
         case "lookupBSKY":
             getProfile(message.handle)
                 .then(profile => sendResponse({ success: true, profile }))
@@ -44,6 +48,9 @@ async function checkAI(text) {
     }
 }
 
+//getProfile calls searchUser and getBSKYDetails
+//getProfile name searches for a matching account and assumes first match
+//getBSKYDetails retrieves the information of the matching account (followers and verified status)
 async function getProfile(handle) {
     console.log('looking up ', handle);
     const user = await searchUser(handle);
@@ -75,7 +82,7 @@ async function getBSKYDetails(did) {
     };
 }
 
-//still need to get this working properly
+//This function injects the content script and runs it, but first checks if there is matching url already
 async function runContentScript() {
     try {
         const checkSavedData = await new Promise((resolve) => {

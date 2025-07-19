@@ -1,27 +1,43 @@
 console.log("Content script running on", window.location.href);
 
+//Main function of content script
 async function extractPageInfo() {
+  //saves text for sapling api and sends it to background.js
   const text = document.body.innerText;
   const aiScore = await new Promise((resolve) => {
     chrome.runtime.sendMessage({ action: 'detectAI', text: text }, (response) => {
       resolve(response.aiScore);
     })
   });
+  //saves url
   const url = window.location.href;
+  //calls function to find best match for an author from page, then sends the name to background.js
   const author = findAuthor();
   let authorBSKY = await new Promise((resolve) => {
     chrome.runtime.sendMessage({ action: 'lookupBSKY', handle: author }, (response) => {
       resolve(response.profile);
     })
   })
+  //Sets default values if the author cannot be found
   if (author == "Unknown") {
     authorBSKY.followers = 0;
     authorBSKY.verified = false;
   }
+  //finds the date of publication
   const date = findPublicationDate();
+  //finds the top level domain of the page
   const domain = findTLD();
+  //calculates a score based on all of these attributes
   const score = calcScore(url, authorBSKY, date, domain, aiScore);
 
+  //Saves the current date
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0'); // zero-pad
+  const day = String(now.getDate()).padStart(2, '0');
+  const dateOnly = `${year}-${month}-${day}`;
+
+  //Creates a data object with all gathered information
   const pageData = {
     url: url,
     authorName: author,
@@ -30,7 +46,8 @@ async function extractPageInfo() {
     date: date,
     domain: domain,
     aiScore: aiScore,
-    timestamp: new Date().toISOString()
+    timestamp: dateOnly,
+    score: score
   };
 
 
@@ -42,6 +59,8 @@ async function extractPageInfo() {
     chrome.storage.local.set({ savedPages: updatedPages }, () => {
       console.log("Page added to savedPages array:", pageData);
     });
+
+    chrome.runtime.sendMessage({ action: 'refresh' });
   });
 }
 
@@ -92,7 +111,7 @@ function calcScore(url, authorBSKY, date, domain, aiScore) {
   const year = parseInt(date.slice(0, 4));
   const month = parseInt(date.slice(5, 7));
   const now = new Date();
-  if (year == now.getFullYear()){
+  if (year == now.getFullYear()) {
     if (month == (now.getMonth() + 1)) {
       score = score + 4;
     } else {
@@ -104,6 +123,7 @@ function calcScore(url, authorBSKY, date, domain, aiScore) {
   console.log("Plus date = " + score);
   score = score * (1 - aiScore);
   console.log("Final score = " + score);
+  return score;
 }
 
 function findTLD() {
