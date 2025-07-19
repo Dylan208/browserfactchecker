@@ -9,13 +9,18 @@ async function extractPageInfo() {
   });
   const url = window.location.href;
   const author = findAuthor();
-  const authorBSKY = await new Promise((resolve) => {
+  let authorBSKY = await new Promise((resolve) => {
     chrome.runtime.sendMessage({ action: 'lookupBSKY', handle: author }, (response) => {
       resolve(response.profile);
     })
   })
+  if (author == "Unknown") {
+    authorBSKY.followers = 0;
+    authorBSKY.verified = false;
+  }
   const date = findPublicationDate();
   const domain = findTLD();
+  const score = calcScore(url, authorBSKY, date, domain, aiScore);
 
   const pageData = {
     url: url,
@@ -28,6 +33,7 @@ async function extractPageInfo() {
     timestamp: new Date().toISOString()
   };
 
+
   // Fetch existing data, append this one, and save back
   chrome.storage.local.get({ savedPages: [] }, (result) => {
     const updatedPages = result.savedPages;
@@ -37,6 +43,67 @@ async function extractPageInfo() {
       console.log("Page added to savedPages array:", pageData);
     });
   });
+}
+
+function calcScore(url, authorBSKY, date, domain, aiScore) {
+  let score = 0;
+  if (authorBSKY) {
+    if (authorBSKY.followers >= 10000) {
+      score = score + 1.1;
+    }
+    else {
+      score = score + (authorBSKY.followers / 10000);
+    }
+    if (authorBSKY.verified == true) {
+      score = score * 2;
+    }
+  }
+  console.log("Author score = " + score);
+  switch (domain) {
+    case "au":
+      if (url.includes("gov")) {
+        score = score + 5;
+      } else {
+        score = score + 1;
+      }
+      break;
+    case "int":
+      score = score + 4;
+      break;
+    case "gov":
+      score = score + 4;
+      break;
+    case "edu":
+      score = score + 3;
+      break;
+    case "org":
+      score = score + 2;
+      break;
+    case "net":
+      score = score + 1;
+      break;
+    case "com":
+      score = score + 1;
+      break;
+    default:
+      break;
+  }
+  console.log("Plus domain = " + score);
+  const year = parseInt(date.slice(0, 4));
+  const month = parseInt(date.slice(5, 7));
+  const now = new Date();
+  if (year == now.getFullYear()){
+    if (month == (now.getMonth() + 1)) {
+      score = score + 4;
+    } else {
+      score = score + 3;
+    }
+  } else if ((year - now.getFullYear() + 3) > 0) {
+    score = score + (year - now.getFullYear() + 3);
+  }
+  console.log("Plus date = " + score);
+  score = score * (1 - aiScore);
+  console.log("Final score = " + score);
 }
 
 function findTLD() {

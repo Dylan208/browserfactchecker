@@ -22,7 +22,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function checkAI(text) {
-    const apiKey = 'api-key'; // Replace with your Sapling API key
+    const apiKey = 'test-key'; // Replace with your Sapling API key
     console.log('recieved by sapling api');
     try {
         const response = await fetch('https://api.sapling.ai/api/v1/aidetect', {
@@ -49,7 +49,11 @@ async function getProfile(handle) {
     const user = await searchUser(handle);
     if (!user) {
         console.log('lookup failed');
-        return;
+        const profile = {
+            followers: 0,
+            verified: false
+        };
+        return profile;
     }
     console.log('found ', user.did, ', looking up details');
     const profile = await getBSKYDetails(user.did);
@@ -81,15 +85,15 @@ async function runContentScript() {
                 chrome.storage.local.get("savedPages", (result) => {
                     console.log('checking for existing data')
                     const pages = result.savedPages || [];
-                    pages.forEach((page) => {
+                    for (const page of pages) {
                         if (currentUrl == page.url) {
                             shouldRun = 0;
                         }
-                    });
+                    }
+                    resolve(shouldRun);
                 });
-                resolve(shouldRun);
             })
-        })
+        });
         if (checkSavedData == 1) {
             console.log("Running content script...");
             chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
