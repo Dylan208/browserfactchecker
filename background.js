@@ -22,6 +22,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         .catch(error => sendResponse({ success: false, error: error.message }));
       return true;
 
+    case "refresh":
+      return false;
+
     default:
       console.warn(`Unhandled action: ${message.action}`);
   }
@@ -30,7 +33,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function checkAI(text) {
 
-  const apiKey = 'api-key'; // Replace with your Sapling API key
+  const apiKey = 'test-key'; // Replace with your Sapling API key
   console.log('recieved by sapling api');
 
   try {
@@ -138,6 +141,8 @@ async function runContentScript() {
 
         })
       });
+    } else {
+      chrome.runtime.sendMessage({ action: 'refresh' });
     }
     
   } catch (error) {

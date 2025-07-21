@@ -4,8 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('checkBtn').addEventListener('click', async () => {
 
     console.log("clicked button");
+    document.getElementById('loading').innerText = "loading...";
     chrome.runtime.sendMessage({ action: 'check' });
-    updateSavedPages();
 
   });
 
@@ -17,6 +17,15 @@ document.addEventListener('DOMContentLoaded', () => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   switch (message.action) {
+    case "check":
+      return false;
+
+    case "detectAI":
+      return false;
+
+    case "lookupBSKY":
+      return false;
+
     case "refresh":
       updateSavedPages()
       return true;
@@ -46,6 +55,7 @@ function updateSavedPages() {
 
     }
 
+    document.getElementById('loading').innerText = "";
     container.innerHTML = ""; // Clear loading text
 
     //Exact display of what information. More information is tracked but unnecessary and clogs visual
