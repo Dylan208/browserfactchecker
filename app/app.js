@@ -77,7 +77,7 @@ function updateSavedPages() {
       Score: ${page.score}
       Author: ${page.authorName}
       Published: ${page.date}
-      AI Score: ${page.aiScore}
+      AI Score: ${(page.aiScore * 100).toFixed(2)}%
       URL: ${page.url}
       Saved on: ${page.timestamp}
       `;
