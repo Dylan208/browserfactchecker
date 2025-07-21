@@ -10,7 +10,7 @@
     --bg: #1e1e2f;
     --fg: #f0f0f0;
     --accent: #4ea8de;
-    --border: #3a3a4d;
+    --border: #45455c;
   }
 }
 
@@ -97,4 +97,17 @@ li {
   color: #888;
   font-size: 0.9rem;
   margin-top: 1rem;
+}
+
+.entry {
+  align-self: flex-start;
+  margin: 0 0 1rem;
+  text-align: left;
+}
+
+.entryHeader {
+  align-self: flex-start;
+  font-size: 1rem;
+  margin: 0 0 0rem;
+  text-align: left;
 }

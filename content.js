@@ -2,6 +2,7 @@ console.log("Content script running on", window.location.href);
 
 //Main function of content script
 async function extractPageInfo() {
+
   //saves text for sapling api and sends it to background.js
   const text = document.body.innerText;
   const aiScore = await new Promise((resolve) => {
@@ -9,8 +10,13 @@ async function extractPageInfo() {
       resolve(response.aiScore);
     })
   });
+
+  //saves title
+  const title = document.title;
+
   //saves url
   const url = window.location.href;
+
   //calls function to find best match for an author from page, then sends the name to background.js
   const author = findAuthor();
   let authorBSKY = await new Promise((resolve) => {
@@ -18,15 +24,19 @@ async function extractPageInfo() {
       resolve(response.profile);
     })
   })
+
   //Sets default values if the author cannot be found
   if (author == "Unknown") {
     authorBSKY.followers = 0;
     authorBSKY.verified = false;
   }
+
   //finds the date of publication
   const date = findPublicationDate();
+
   //finds the top level domain of the page
   const domain = findTLD();
+
   //calculates a score based on all of these attributes
   const score = calcScore(url, authorBSKY, date, domain, aiScore);
 
@@ -39,6 +49,7 @@ async function extractPageInfo() {
 
   //Creates a data object with all gathered information
   const pageData = {
+    title: title,
     url: url,
     authorName: author,
     authorFollowers: authorBSKY.followers,
@@ -49,7 +60,6 @@ async function extractPageInfo() {
     timestamp: dateOnly,
     score: score
   };
-
 
   // Fetch existing data, append this one, and save back
   chrome.storage.local.get({ savedPages: [] }, (result) => {
@@ -65,7 +75,11 @@ async function extractPageInfo() {
 }
 
 function calcScore(url, authorBSKY, date, domain, aiScore) {
+
+  //Baseline score set
   let score = 0;
+
+  //Adds score based on authors bluesky credentials
   if (authorBSKY) {
     if (authorBSKY.followers >= 10000) {
       score = score + 1.1;
@@ -74,11 +88,16 @@ function calcScore(url, authorBSKY, date, domain, aiScore) {
       score = score + (authorBSKY.followers / 10000);
     }
     if (authorBSKY.verified == true) {
+      //Multiplied by 2 if the author is verified
       score = score * 2;
     }
   }
   console.log("Author score = " + score);
+
+  //Adds score based on TLD
   switch (domain) {
+
+    //If TLD is au, checks if it is a government source
     case "au":
       if (url.includes("gov")) {
         score = score + 5;
@@ -86,41 +105,57 @@ function calcScore(url, authorBSKY, date, domain, aiScore) {
         score = score + 1;
       }
       break;
+
     case "int":
       score = score + 4;
       break;
+
     case "gov":
       score = score + 4;
       break;
+
     case "edu":
       score = score + 3;
       break;
+
     case "org":
       score = score + 2;
       break;
+
     case "net":
       score = score + 1;
       break;
+
     case "com":
       score = score + 1;
       break;
+
     default:
       break;
+
   }
   console.log("Plus domain = " + score);
+
+  //Adds score based on date of publication
   const year = parseInt(date.slice(0, 4));
   const month = parseInt(date.slice(5, 7));
   const now = new Date();
+
+  //If current year, checks for month, bonus if same year same month
   if (year == now.getFullYear()) {
     if (month == (now.getMonth() + 1)) {
       score = score + 4;
     } else {
       score = score + 3;
     }
+
+    //Otherwise deducts points from 3 for each year old
   } else if ((year - now.getFullYear() + 3) > 0) {
     score = score + (year - now.getFullYear() + 3);
   }
   console.log("Plus date = " + score);
+
+  //Multiply total score by ai score for final score
   score = score * (1 - aiScore);
   console.log("Final score = " + score);
   return score;
@@ -150,6 +185,15 @@ function findAuthor() {
   }
 
   function removeNumbers(text) {
+    if (window.location.hostname.includes('abc.net.au')) {
+      const match = text.match(/\/news\/([^/]+)\//);
+
+      if (match) {
+        text = match[1];
+        text = text.replace(/-/g, ' ')
+          .replace(/\b\w/g, c => c.toUpperCase());
+      }
+    }
     return text
       .replace(/\d+/g, '')// Remove all numbers
       .replace(/\s+/g, ' ') // Fix spaces
